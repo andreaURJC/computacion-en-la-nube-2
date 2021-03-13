@@ -1,0 +1,73 @@
+Resources:
+  eventsEC2:
+    Type: AWS::EC2::Instance
+    Properties: 
+      KeyName: events-EC2
+      ImageId: !Ref AmiId
+      InstanceType: "t2.micro"
+      IamInstanceProfile: 
+        - !Ref ec2InstanceProfile
+      UserData: !Base64 |
+        #!/bin/bash -ex
+        apt-get update && apt-get install -y nginx
+
+  anunciosRDS:
+    Type: AWS::RDS::DBInstance
+  eventsS3:
+    Type: AWS::S3::Bucket
+    AccessControl: PublicRead
+    BucketName: !Ref BucketName
+  httpsSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: httpsSecurityGroup
+      GroupDescription: "SG for EC2 with 80, 433 and 8443 ports"
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: '80'
+          ToPort: '80'
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: '8443'
+          ToPort: '8443'
+          CidrIp: 0.0.0.0/0
+  ec2S3FullAccessRole:
+    Type: AWS::IAM::Role
+    Properties:
+      Path: "/"
+      ManagedPolicyArns:
+        - "arn:aws:iam::aws:policy/AmazonS3FullAccess"
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - ec2.amazonaws.com
+          Action:
+          - sts:AssumeRole
+  ec2InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Path: "/"
+      Roles: 
+        - !Ref ec2S3FullAccessRole
+Parameters:
+  RdsPassword:
+    Type: String 
+    Description: The password of the database
+  BucketName:
+    Type: String 
+    Description: The name of the bucket
+    Default: andrea-juanma-urjc
+    # TODO: Mirar como escapar el guion.
+    # AllowedPattern: '^[a-z0-9]{5,40}$'
+    # ConstraintDescription: Must contain only lowercase letters or numbers.
+  AmiId:
+    Type: 'AWS::EC2::Image::Id'
+    Description: The ami to use (it must be an AMI on the current region and must be Ubuntu 20.04)
+    Default: ami-013f17f36f8b1fefb
