@@ -92,16 +92,6 @@ Resources:
       Path: "/"
       Roles: 
         - !Ref ec2S3FullAccessRole
-  vpc:
-    Type: AWS::EC2::VPC
-    Properties:
-      CidrBlock: 10.0.0.0/16
-      EnableDnsSupport: true
-      EnableDnsHostnames: false
-      InstanceTenancy: default
-      Tags:
-        - Key: Name
-          Value: AWSJS
 Parameters:
   DBPassword:
     Type: String 
