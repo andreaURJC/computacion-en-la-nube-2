@@ -15,7 +15,7 @@ Resources:
               #!/bin/bash -ex
               apt-get update && sudo apt install -y openjdk-11-jdk
               wget ${URLDownloadJar}
-              java -DBUCKET_NAME=${BucketName} -DRDS_ENDPOINT=database-events.cjyvoxj9hemh.us-east-1.rds.amazonaws.com -DRDS_DATABASE=events -DRDS_USER=admin -DRDS_PASS=${DBPassword} -Dspring.profiles.active=production -jar app.jar
+              java -DBUCKET_NAME=${BucketName} -DRDS_ENDPOINT=events.cjyvoxj9hemh.us-east-1.rds.amazonaws.com -DRDS_DATABASE=events -DRDS_USER=events -DRDS_PASS=${DBPassword} -Dspring.profiles.active=production -DREGION=us-east-1 -jar app.jar
   eventsS3:
     Type: AWS::S3::Bucket
     Properties:
