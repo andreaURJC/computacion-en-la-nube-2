@@ -1,6 +1,7 @@
 Resources:
   eventsEC2:
     Type: AWS::EC2::Instance
+    DependsOn: rdsDBInstance
     Properties: 
       KeyName: andrea-juanma-urjc
       ImageId: !Ref AmiId
@@ -9,14 +10,12 @@ Resources:
         - !Ref httpsSecurityGroup
       IamInstanceProfile: !Ref ec2InstanceProfile
       UserData: 
-        Fn::Base64: !Sub |
-            #!/bin/bash -ex
-            apt-get update && sudo apt install -y openjdk-11-jdk
-            wget ${URLDownloadJar}
-            java -jar app.jar
-
-  # anunciosRDS:
-  #   Type: AWS::RDS::DBInstance
+        Fn::Base64: 
+          Fn::Sub: |
+              #!/bin/bash -ex
+              apt-get update && sudo apt install -y openjdk-11-jdk
+              wget ${URLDownloadJar}
+              java -DBUCKET_NAME=${BucketName} -DRDS_ENDPOINT=database-events.cjyvoxj9hemh.us-east-1.rds.amazonaws.com -DRDS_DATABASE=events -DRDS_USER=admin -DRDS_PASS=${DBPassword} -Dspring.profiles.active=production -jar app.jar
   eventsS3:
     Type: AWS::S3::Bucket
     Properties:
@@ -44,8 +43,34 @@ Resources:
           FromPort: '22'
           ToPort: '22'
           CidrIp: 0.0.0.0/0
-
-      #VPCId (?)
+  rdsSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: rdsSecurityGroup
+      GroupDescription: "SG for MYSQL with 3306"
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: '3306'
+          ToPort: '3306'
+          SourceSecurityGroupName: !Ref httpsSecurityGroup # Sólo permite acceso a las instancias de este grupo -> a la EC2
+  rdsDBInstance:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      DBInstanceClass: "db.t2.micro"
+      AllocatedStorage: 20
+      AllowMajorVersionUpgrade: false
+      AutoMinorVersionUpgrade: false
+      DBInstanceIdentifier: events
+      DBName: events
+      Engine: mysql
+      EngineVersion: 8.0
+      MasterUsername: events
+      MasterUserPassword: !Ref DBPassword
+      MultiAZ: false
+      PubliclyAccessible: false
+      StorageEncrypted: false
+      VPCSecurityGroups:
+        - !GetAtt rdsSecurityGroup.GroupId
   ec2S3FullAccessRole:
     Type: AWS::IAM::Role
     Properties:
@@ -67,8 +92,18 @@ Resources:
       Path: "/"
       Roles: 
         - !Ref ec2S3FullAccessRole
+  vpc:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.0.0.0/16
+      EnableDnsSupport: true
+      EnableDnsHostnames: false
+      InstanceTenancy: default
+      Tags:
+        - Key: Name
+          Value: AWSJS
 Parameters:
-  RdsPassword:
+  DBPassword:
     Type: String 
     Description: The password of the database
   BucketName:
