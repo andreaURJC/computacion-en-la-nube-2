@@ -7,16 +7,20 @@ Resources:
       InstanceType: "t2.micro"
       IamInstanceProfile: 
         - !Ref ec2InstanceProfile
-      UserData: !Base64 |
-        #!/bin/bash -ex
-        apt-get update && apt-get install -y nginx
+      UserData: 
+        Fn::Base64: !Sub |
+            #!/bin/bash -ex
+            apt-get update && sudo apt install -y openjdk-8-jdk
+            wget ${URLDownloadJar}
+            java -jar app.jar
 
-  anunciosRDS:
-    Type: AWS::RDS::DBInstance
+  # anunciosRDS:
+  #   Type: AWS::RDS::DBInstance
   eventsS3:
     Type: AWS::S3::Bucket
-    AccessControl: PublicRead
-    BucketName: !Ref BucketName
+    Properties:
+      AccessControl: PublicRead
+      BucketName: !Ref BucketName
   httpsSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
@@ -35,6 +39,7 @@ Resources:
           FromPort: '8443'
           ToPort: '8443'
           CidrIp: 0.0.0.0/0
+      #VPCId (?)
   ec2S3FullAccessRole:
     Type: AWS::IAM::Role
     Properties:
@@ -71,3 +76,7 @@ Parameters:
     Type: 'AWS::EC2::Image::Id'
     Description: The ami to use (it must be an AMI on the current region and must be Ubuntu 20.04)
     Default: ami-013f17f36f8b1fefb
+  URLDownloadJar:
+    Type: String 
+    Description: The name of the bucket
+    Default: : https://s3.amazonaws.com/practica-2.cloud.michel/app.jar
