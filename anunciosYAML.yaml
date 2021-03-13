@@ -2,15 +2,16 @@ Resources:
   eventsEC2:
     Type: AWS::EC2::Instance
     Properties: 
-      KeyName: events-EC2
+      KeyName: andrea-juanma-urjc
       ImageId: !Ref AmiId
       InstanceType: "t2.micro"
-      IamInstanceProfile: 
-        - !Ref ec2InstanceProfile
+      SecurityGroups:
+        - !Ref httpsSecurityGroup
+      IamInstanceProfile: !Ref ec2InstanceProfile
       UserData: 
         Fn::Base64: !Sub |
             #!/bin/bash -ex
-            apt-get update && sudo apt install -y openjdk-8-jdk
+            apt-get update && sudo apt install -y openjdk-11-jdk
             wget ${URLDownloadJar}
             java -jar app.jar
 
@@ -39,6 +40,11 @@ Resources:
           FromPort: '8443'
           ToPort: '8443'
           CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: '22'
+          ToPort: '22'
+          CidrIp: 0.0.0.0/0
+
       #VPCId (?)
   ec2S3FullAccessRole:
     Type: AWS::IAM::Role
@@ -79,4 +85,7 @@ Parameters:
   URLDownloadJar:
     Type: String 
     Description: The name of the bucket
-    Default: : https://s3.amazonaws.com/practica-2.cloud.michel/app.jar
+    Default: https://s3.amazonaws.com/practica-2.cloud.michel/app.jar
+
+
+
