@@ -111,6 +111,15 @@ Parameters:
     Type: String 
     Description: The name of the bucket
     Default: https://s3.amazonaws.com/practica-2.cloud.michel/app.jar
-
+Outputs:
+  WebSiteURL:
+    Value:
+      !Join
+        - ''
+        - - "http://"
+          - !GetAtt eventsEC2.PublicDnsName
+          - ":8443"
+          - "/api/events/"
+    Description: "Aplicacion de eventos Master Cloud Apps"
 
 
